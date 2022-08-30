@@ -24,7 +24,7 @@ class Connection():
 
 	def send_message(self, message):
 
-		obj = AES.new('You are a tosser'.encode("utf8"), AES.MODE_CFB, 'Aipom piplup 420'.encode("utf8")) # Gotta love pokemon
+		obj = AES.new('gjdkflaprptlyfgk'.encode("utf8"), AES.MODE_CFB, 'aajfkgmfndkfpowe'.encode("utf8")) # Gotta love pokemon
 		ciphertext = obj.encrypt(pickle.dumps(message))
 		self.s.sendall(ciphertext)
 
@@ -42,7 +42,7 @@ class Connection():
 
 			# So first before we do anything, we need to decrypt our ciphertext and convert it from bytes to an actual readable string
 			self.encryped_message = self.s.recv(1024)
-			self.obj = AES.new('You are a tosser'.encode("utf8"), AES.MODE_CFB, 'Aipom piplup 420'.encode("utf8"))
+			self.obj = AES.new('gjdkflaprptlyfgk'.encode("utf8"), AES.MODE_CFB, 'aajfkgmfndkfpowe'.encode("utf8"))
 			self.cipher = self.obj.decrypt(self.encryped_message)
 			self.data = pickle.loads(self.cipher)    
 			print(self.data[1])
