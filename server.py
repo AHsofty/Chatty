@@ -42,11 +42,49 @@ class Server():
 		return ciphertext
 
 	def decrypt(self, ciphertext):
-		obj = AES.new('gjdkflaprptlyfgk'.encode("utf8"), AES.MODE_CFB, 'aajfkgmfndkfpowe'.encode("utf8"))
-		text = obj.decrypt(ciphertext)    
-		txt = pickle.loads(text)
-		return txt
+		try:
+			obj = AES.new('gjdkflaprptlyfgk'.encode("utf8"), AES.MODE_CFB, 'aajfkgmfndkfpowe'.encode("utf8"))
+			text = obj.decrypt(ciphertext)    
+			txt = pickle.loads(text)
+			return txt
+		except Exception:
+			return None
 
+
+	def remove(self, conn, CurrentRoom):
+		"""
+		Before we start removing the inactive user
+		we need to notify the active user(s) with additional information
+		"""
+
+		# First we need to figure out who the inactive user is
+		clients_in_room = []
+		for i in self.rooms.items():
+			if i[1] == CurrentRoom:
+				clients_in_room.append(i[0])		
+						
+		for idx, x in enumerate(clients_in_room):
+			if x == conn:
+				user = idx+1
+
+		# Now that we have got the active user, let's remove him from the room
+		del self.rooms[conn]
+
+
+		# Ok now that there are only active users left, we need to notify them that somebody has disconnected
+		# We also need to notify them their new username
+		clients_in_room = []
+		for i in self.rooms.items():
+			if i[1] == CurrentRoom:
+				clients_in_room.append(i[0])		
+						
+
+		for a in self.rooms.items():
+			if a[1] == CurrentRoom:
+				a[0].sendall(self.encrypt([f"User {user} has disconnected", None, 0]))
+
+		for idx, x in enumerate(clients_in_room):
+			x.sendall(self.encrypt([f"Your updated name is: {idx+1}", None, 0]))
 
 
 	def listen(self, conn, CurrentRoom):
@@ -55,51 +93,14 @@ class Server():
 				data = conn.recv(1024)
 			except Exception:
 				print("A client has been disconnected")
-				"""
-				Before we start removing the inactive user
-				And we need to notify the active user(s) with additional information
-
-				I'll admit, this bit is a little messy. 
-				I could've done this more efficiently by creating another function that does stuff
-				But I didn't because I'm lazy, please don't kill me
-
-				This bit needs optimization
-				"""
-
-				# First we need to figure out who the inactive user is
-				clients_in_room = []
-				for i in self.rooms.items():
-					if i[1] == CurrentRoom:
-						clients_in_room.append(i[0])		
-								
-				for idx, x in enumerate(clients_in_room):
-					if x == conn:
-						user = idx+1
-
-				# Now that we have got the active user, let's remove him from the room
-				del self.rooms[conn]
-
-
-				# Ok now that there are only active users left, we need to notify them that somebody has disconnected
-				# We also need to notify them their new username
-				clients_in_room = []
-				for i in self.rooms.items():
-					if i[1] == CurrentRoom:
-						clients_in_room.append(i[0])		
-								
-
-				for a in self.rooms.items():
-					if a[1] == CurrentRoom:
-						a[0].sendall(self.encrypt([f"User {user} has disconnected", None, 0]))
-
-				for idx, x in enumerate(clients_in_room):
-					x.sendall(self.encrypt([f"Your updated name is: {idx+1}", None, 0]))
+				self.remove(conn, CurrentRoom)
 				return
+				
 
-
-			# ------------------------------------------------------------------------		
-			# If there is no error (so somebody didn't disconnect), we can continue
 			data = self.decrypt(data) # Current this is not end-to-end.
+			if data == None:
+				self.remove(conn, CurrentRoom)
+				return
 
 			# Ok we've got the data, cool, but now we need to find which room it has to go to
 			# We can do this by checking which room belongs to the client, and sending the message 
